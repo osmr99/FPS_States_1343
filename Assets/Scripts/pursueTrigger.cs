@@ -12,17 +12,27 @@ public class pursueTrigger : MonoBehaviour
     }
     private void OnTriggerEnter(Collider other)
     {
-        if (other.TryGetComponent(out FPSController FPSController))
+        if (other.TryGetComponent(out FPSController FPSController) && enemy.inRange == false && enemy.currentState != MovingObjectStates.recovering)
         {
-            enemy.startPursueIndex();
+            enemy.currentState = MovingObjectStates.pursue;
+        }
+    }
+
+    private void OnTriggerStay(Collider other)
+    {
+        if (other.TryGetComponent(out FPSController FPSController) && enemy.inRange == false && enemy.currentState != MovingObjectStates.recovering)
+        {
+            enemy.elapsed_two = 0;
+            enemy.currentState = MovingObjectStates.pursue;
         }
     }
 
     private void OnTriggerExit(Collider other)
     {
-        if (other.TryGetComponent(out FPSController FPSController))
+        if (other.TryGetComponent(out FPSController FPSController) && enemy.inRange == false && enemy.currentState != MovingObjectStates.recovering)
         {
-            enemy.startWanderIndex();
+            enemy.elapsed_two = 0;
+            enemy.currentState = MovingObjectStates.wander;
         }
     }
 }

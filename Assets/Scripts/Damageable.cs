@@ -39,4 +39,12 @@ public class Damageable : MonoBehaviour
         var damageNumber = Instantiate(damageNumberPrefab, transform.position, Quaternion.identity);
         damageNumber.GetComponent<DamageNumber>().SetNumber(amount);
     }
+
+    private void OnTriggerEnter(Collider other)
+    {
+        if (other.TryGetComponent(out FPSController FPSController))
+        {
+            Debug.Log("Player got damage!");
+        }
+    }
 }

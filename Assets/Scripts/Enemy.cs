@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using Unity.VisualScripting;
 using UnityEditorInternal;
 using UnityEngine;
 using UnityEngine.AI;
@@ -10,32 +11,30 @@ public enum MovingObjectStates
     wander,
     pursue,
     attack,
-    recovery
+    recovery,
+    recovering
 }
 
 public class Enemy : MonoBehaviour
 {
     [SerializeField] public MovingObjectStates currentState;
     Vector3 startingLocation;
+    [SerializeField] GameObject targetLocation;
     [SerializeField] float wanderRange;
     float wanderInterval;
-    [SerializeField] float playerSightRange;
-    [SerializeField] float playerAttackRange;
-    [SerializeField] float currentStateElapsed;
-    [SerializeField] float recoveryTime;
-    [SerializeField] float hurtTime = 0.75f; // Whenever the enemy gets damaged, they enter a stunt state for 
-    //                                          this amount of seconds.
+    float recoveryTime = 3.5f;
+    float attackTime = 1;
+    float hurtTime = 0.5f; // Whenever the enemy gets damaged, they enter a stunt state for 
+                          //  this amount of seconds.
     NavMeshAgent agent;
 
     public Rigidbody Rigidbody { get; private set; }
     Vector3 origin;
     float elapsed_one = 0;
-    float elapsed_two = 0;
-
-    public bool wanderIndex = false;
-    public bool pursueIndex = false;
-
-    public bool isPursuing = false;
+    public float elapsed_two = 0;
+    public float elapsed_three = 0;
+    float elapsed_four = 1;
+    public bool inRange = false;
 
     // Start is called before the first frame update
     void Start()
@@ -45,6 +44,7 @@ public class Enemy : MonoBehaviour
         origin = transform.position;
         startingLocation = origin;
         agent.SetDestination(startingLocation);
+        currentState = MovingObjectStates.wander;
         //agent.SetDestination(new Vector3(0, 0, 0));
     }
 
@@ -53,6 +53,9 @@ public class Enemy : MonoBehaviour
     {
         elapsed_one += Time.deltaTime;
         elapsed_two += Time.deltaTime;
+        elapsed_three += Time.deltaTime;
+        elapsed_four += Time.deltaTime;
+
         if (elapsed_one > hurtTime && Rigidbody.isKinematic == false)
         {
             Rigidbody.isKinematic = true;
@@ -63,43 +66,47 @@ public class Enemy : MonoBehaviour
         switch (currentState)
         {
             case MovingObjectStates.wander:
-                Debug.Log("state 0");
                 startWander();
                 break;
 
             case MovingObjectStates.pursue:
-                Debug.Log("state 1");
-                isPursuing = true;
                 startPursue();
                 break;
 
             case MovingObjectStates.attack:
+                startAttack();
                 break;
 
             case MovingObjectStates.recovery:
+                startRecovery();
+                break;
+            case MovingObjectStates.recovering:
+                startRecovering();
                 break;
 
         }
 
-        Debug.Log("is pursuing = " + isPursuing);
+        if (elapsed_three > attackTime && currentState == MovingObjectStates.attack)
+        {
+            currentState = MovingObjectStates.recovery;
+        }
+
+        if (elapsed_four > recoveryTime && currentState == MovingObjectStates.recovering)
+        {
+            agent.speed = 3;
+            agent.acceleration = 8;
+            currentState = MovingObjectStates.wander;
+        }
+            
     }
 
     public void ApplyKnockback(Vector3 knockback)
     {
-        if(Rigidbody.isKinematic)
-        {
-            agent.enabled = false;
-            Rigidbody.isKinematic = false;
-            elapsed_one = 0;
-            GetComponent<Rigidbody>().AddForce(knockback, ForceMode.Impulse);
-        }
-        else
-        {
-            agent.enabled = false;
-            elapsed_one = 0;
-            GetComponent<Rigidbody>().AddForce(knockback, ForceMode.Impulse);
-        }
-
+        agent.enabled = true;
+        Rigidbody.isKinematic = false;
+        Rigidbody.useGravity = false;
+        elapsed_one = 0;
+        GetComponent<Rigidbody>().AddForce(knockback, ForceMode.Impulse);
     }
 
     public void Respawn()
@@ -107,6 +114,7 @@ public class Enemy : MonoBehaviour
         transform.position = origin;
         Rigidbody.AddForce(Vector3.zero, ForceMode.Impulse);
         Rigidbody.velocity = Vector3.zero;
+
     }
 
     Vector3 Wander()
@@ -119,45 +127,57 @@ public class Enemy : MonoBehaviour
 
         if (gotPoint)
         {
-            Debug.Log("Success!");
             return hit.position;
         }
         else
         {
-            Debug.Log("Fail");
             return startingLocation;
         }
     }
 
     void randomWanderRate()
     {
-        wanderInterval = Random.Range(2, 4);
+        wanderInterval = Random.Range(2, 3);
     }
 
-    public void startWanderIndex()
+    void startWander()
     {
-        currentState = MovingObjectStates.wander;
-    }
-
-    public void startPursueIndex()
-    {
-        currentState = MovingObjectStates.pursue;
-    }
-
-    public void startWander()
-    {
-        if (elapsed_two > wanderInterval && isPursuing == false)
+        if (elapsed_two > wanderInterval)
         {
+            agent.speed = 3;
+            agent.acceleration = 8;
             agent.SetDestination(Wander());
             randomWanderRate();
             elapsed_two = 0;
         }
     }
 
-    public void startPursue()
+    void startPursue()
     {
-
+        agent.speed = 3;
+        agent.acceleration = 8;
+        agent.SetDestination(targetLocation.transform.position);
     }
 
- 
+    void startAttack()
+    {
+        agent.speed = 100;
+        agent.acceleration = 100;
+        Vector3 attackLocation = targetLocation.transform.position + Vector3.forward;
+        //agent.SetDestination(attackLocation);
+        agent.SetDestination(targetLocation.transform.position);
+    }
+
+    void startRecovery()
+    {
+        inRange = false;
+        elapsed_four = 0;
+        agent.speed = 0;
+        currentState = MovingObjectStates.recovering;
+    }
+
+    void startRecovering()
+    {
+        // This is just an empty placeholder.
+    }
 }
