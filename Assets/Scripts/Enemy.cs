@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEditorInternal;
 using UnityEngine;
 using UnityEngine.AI;
+using UnityEngine.UIElements;
 
 public enum MovingObjectStates
 {
@@ -14,7 +15,7 @@ public enum MovingObjectStates
 
 public class Enemy : MonoBehaviour
 {
-    [SerializeField] MovingObjectStates currentState;
+    [SerializeField] public MovingObjectStates currentState;
     Vector3 startingLocation;
     [SerializeField] float wanderRange;
     float wanderInterval;
@@ -30,6 +31,11 @@ public class Enemy : MonoBehaviour
     Vector3 origin;
     float elapsed_one = 0;
     float elapsed_two = 0;
+
+    public bool wanderIndex = false;
+    public bool pursueIndex = false;
+
+    public bool isPursuing = false;
 
     // Start is called before the first frame update
     void Start()
@@ -57,15 +63,14 @@ public class Enemy : MonoBehaviour
         switch (currentState)
         {
             case MovingObjectStates.wander:
-                if(elapsed_two > wanderInterval)
-                {
-                    agent.SetDestination(Wander());
-                    randomWanderRate();
-                    elapsed_two = 0;
-                }
+                Debug.Log("state 0");
+                startWander();
                 break;
 
             case MovingObjectStates.pursue:
+                Debug.Log("state 1");
+                isPursuing = true;
+                startPursue();
                 break;
 
             case MovingObjectStates.attack:
@@ -75,6 +80,8 @@ public class Enemy : MonoBehaviour
                 break;
 
         }
+
+        Debug.Log("is pursuing = " + isPursuing);
     }
 
     public void ApplyKnockback(Vector3 knockback)
@@ -126,4 +133,31 @@ public class Enemy : MonoBehaviour
     {
         wanderInterval = Random.Range(2, 4);
     }
+
+    public void startWanderIndex()
+    {
+        currentState = MovingObjectStates.wander;
+    }
+
+    public void startPursueIndex()
+    {
+        currentState = MovingObjectStates.pursue;
+    }
+
+    public void startWander()
+    {
+        if (elapsed_two > wanderInterval && isPursuing == false)
+        {
+            agent.SetDestination(Wander());
+            randomWanderRate();
+            elapsed_two = 0;
+        }
+    }
+
+    public void startPursue()
+    {
+
+    }
+
+ 
 }
